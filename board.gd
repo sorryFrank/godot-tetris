@@ -1,4 +1,4 @@
-extends Node
+extends Node2D
 class_name Board
 
 # 棋盘尺寸：10列 x 20行
