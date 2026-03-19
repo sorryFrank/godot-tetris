@@ -6,7 +6,7 @@ const BOARD_WIDTH := 10
 const BOARD_HEIGHT := 20
 
 # 棋盘网格，0表示空，1表示已固定的方块
-var grid: Array = []
+var grid: Array[Array] = []
 
 # 七种标准俄罗斯方块（Tetromino）的相对坐标
 # 使用 Vector2，假设 (0,0) 为旋转轴心
@@ -57,7 +57,7 @@ var tetromino_shapes := {
 
 # ====== 状态变量 ======
 var current_type: String = ""          # 当前方块名称
-var current_shape: Array = []          # 当前方块的坐标数组
+var current_shape: Array[Vector2] = [] # 当前方块的坐标数组
 var current_pos: Vector2 = Vector2.ZERO # 当前方块在网格的坐标
 
 # 随机数生成器
@@ -105,8 +105,8 @@ func setup_timer() -> void:
 	fall_timer.wait_time = 0.5  # 0.5秒间隔
 	fall_timer.one_shot = false  # 重复执行
 	
-	# 连接信号
-	fall_timer.timeout.connect(_on_fall_timer_timeout)
+	# 连接信号 (Godot 4.x 语法)
+	fall_timer.timeout.connect(Callable(self, "_on_fall_timer_timeout"))
 	
 	# 启动定时器
 	fall_timer.start()
@@ -139,7 +139,7 @@ func spawn_tetromino() -> void:
 		return
 
 # 碰撞检测
-func is_valid_position(target_pos: Vector2, shape: Array) -> bool:
+func is_valid_position(target_pos: Vector2, shape: Array[Vector2]) -> bool:
 	for block_pos in shape:
 		var world_x = target_pos.x + block_pos.x
 		var world_y = target_pos.y + block_pos.y
@@ -234,7 +234,7 @@ func print_board() -> void:
 # ====== 辅助函数 ======
 
 # 获取指定方块的形状
-func get_tetromino_shape(shape_name: String) -> Array:
+func get_tetromino_shape(shape_name: String) -> Array[Vector2]:
 	if tetromino_shapes.has(shape_name):
 		return tetromino_shapes[shape_name].duplicate()
 	return []
