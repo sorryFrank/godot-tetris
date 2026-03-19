@@ -10,7 +10,7 @@ var grid: Array[Array] = []
 
 # 七种标准俄罗斯方块（Tetromino）的相对坐标
 # 使用 Vector2，假设 (0,0) 为旋转轴心
-var tetromino_shapes := {
+var tetromino_shapes: Dictionary = {
 	"I": [
 		Vector2(-1, 0),
 		Vector2(0, 0),
@@ -252,12 +252,21 @@ func print_board() -> void:
 # 获取指定方块的形状
 func get_tetromino_shape(shape_name: String) -> Array[Vector2]:
 	if tetromino_shapes.has(shape_name):
-		return tetromino_shapes[shape_name].duplicate()
+		# 从字典获取无类型数组
+		var untyped_array = tetromino_shapes[shape_name].duplicate()
+		# 创建类型化数组并赋值
+		var typed_array: Array[Vector2] = []
+		typed_array.assign(untyped_array)
+		return typed_array
 	return []
 
 # 获取所有方块形状的名称
-func get_all_shape_names() -> Array:
-	return tetromino_shapes.keys()
+func get_all_shape_names() -> Array[String]:
+	# 从字典获取键并转换为类型化数组
+	var keys = tetromino_shapes.keys()
+	var typed_array: Array[String] = []
+	typed_array.assign(keys)
+	return typed_array
 
 # 检查位置是否在棋盘范围内
 func is_cell_in_bounds(x: int, y: int) -> bool:
