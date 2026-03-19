@@ -128,7 +128,7 @@ func spawn_tetromino() -> void:
 	# 设置初始位置：顶部中央 (x=4, y=0)
 	current_pos = Vector2(4, 0)
 	
-	print("生成新方块: %s，初始位置: (%d, %d)" % [current_type, current_pos.x, current_pos.y])
+	print("生成新方块: %s，初始位置: (%d, %d)" % [current_type, int(current_pos.x), int(current_pos.y)])
 	
 	# 检查生成位置是否有效
 	if not is_valid_position(current_pos, current_shape):
@@ -165,7 +165,7 @@ func tick_down() -> void:
 	if is_valid_position(new_pos, current_shape):
 		# 可以下移，更新位置
 		current_pos = new_pos
-		print("方块下移一格到: (%d, %d)" % [current_pos.x, current_pos.y])
+		print("方块下移一格到: (%d, %d)" % [int(current_pos.x), int(current_pos.y)])
 		print_board()
 	else:
 		# 无法下移，锁定方块
@@ -195,7 +195,7 @@ func print_board() -> void:
 		print("")
 	
 	print("=== 俄罗斯方块游戏 ===")
-	print("当前方块: %s, 位置: (%d, %d)" % [current_type, current_pos.x, current_pos.y])
+	print("当前方块: %s, 位置: (%d, %d)" % [current_type, int(current_pos.x), int(current_pos.y)])
 	print("格式: 0=空, 1=固定方块, 2=活动方块")
 	print("")
 	
@@ -216,8 +216,19 @@ func print_board() -> void:
 				display_grid[world_y][world_x] = 2
 	
 	# 打印网格
-	print("   " + " ".join([str(i) for i in range(BOARD_WIDTH)]))  # 列号
-	print("  +" + "-" * (BOARD_WIDTH * 2 - 1) + "+")
+	# 生成列号字符串
+	var column_numbers := ""
+	for i in range(BOARD_WIDTH):
+		column_numbers += str(i)
+		if i < BOARD_WIDTH - 1:
+			column_numbers += " "
+	print("   " + column_numbers)  # 列号
+	# 生成上分隔线
+	var top_separator := "  +"
+	for i in range(BOARD_WIDTH * 2 - 1):
+		top_separator += "-"
+	top_separator += "+"
+	print(top_separator)
 	
 	for y in range(BOARD_HEIGHT):
 		var row_str := "%2d|" % y
@@ -228,7 +239,12 @@ func print_board() -> void:
 		row_str += "|"
 		print(row_str)
 	
-	print("  +" + "-" * (BOARD_WIDTH * 2 - 1) + "+")
+	# 生成下分隔线
+	var bottom_separator := "  +"
+	for i in range(BOARD_WIDTH * 2 - 1):
+		bottom_separator += "-"
+	bottom_separator += "+"
+	print(bottom_separator)
 	print("")
 
 # ====== 辅助函数 ======
