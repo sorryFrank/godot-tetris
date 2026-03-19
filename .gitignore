@@ -1,0 +1,68 @@
+# Godot-specific ignores
+*.import
+export.cfg
+export_presets.cfg
+
+# Godot 4+ ignores
+.godot/
+godot-*-stable_linux.x86_64
+godot-*-stable_win64.exe
+godot-*-stable_osx.universal
+
+# Imported resources (changes upon reimport)
+*.import
+
+# Mono-specific ignores
+.mono/
+data_*/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# User-specific files
+user://
+
+# Build artifacts
+build/
+bin/
+obj/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs and temp files
+logs/
+*.log
+tmp/
+
+# OS generated files
+ehthumbs.db
+Icon?
+$RECYCLE.BIN/
+
+# Python (if used for AI)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Node.js (if used for tooling)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local configuration
+local_settings.cfg
+*.local
