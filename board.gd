@@ -88,6 +88,9 @@ func _ready() -> void:
 	
 	# 请求初始绘制
 	queue_redraw()
+	
+	# 启用输入处理
+	set_process_input(true)
 
 # 初始化棋盘网格
 func initialize_grid() -> void:
@@ -389,3 +392,125 @@ func get_tetromino_color(shape_name: String) -> Color:
 			return Color.RED
 		_:
 			return Color.WHITE
+
+# ====== 玩家输入控制 ======
+
+# 移动逻辑
+func move(dx: int, dy: int) -> bool:
+	if current_type == "" or current_shape.size() == 0:
+		return false
+	
+	var target_pos = current_pos + Vector2(dx, dy)
+	
+	if is_valid_position(target_pos, current_shape):
+		current_pos = target_pos
+		print("方块移动到: (%d, %d)" % [int(current_pos.x), int(current_pos.y)])
+		queue_redraw()
+		return true
+	else:
+		print("无法移动到: (%d, %d)" % [int(target_pos.x), int(target_pos.y)])
+		return false
+
+# 旋转逻辑
+func rotate_piece() -> bool:
+	if current_type == "" or current_shape.size() == 0:
+		return false
+	
+	# 特殊处理：O方块不旋转
+	if current_type == "O":
+		print("O方块不旋转")
+		return false
+	
+	# 创建旋转后的形状数组
+	var rotated_shape: Array[Vector2] = []
+	
+	for block_pos in current_shape:
+		# 顺时针旋转90度公式: (x, y) -> (-y, x)
+		var rotated_pos = Vector2(-block_pos.y, block_pos.x)
+		rotated_shape.append(rotated_pos)
+	
+	# 检查旋转后是否有效
+	if is_valid_position(current_pos, rotated_shape):
+		current_shape = rotated_shape
+		print("方块已旋转")
+		queue_redraw()
+		return true
+	else:
+		print("旋转无效（会碰撞或越界）")
+		return false
+
+# 快速下落（硬降）
+func hard_drop() -> void:
+	print("执行硬降")
+	var moved = true
+	var drop_count = 0
+	
+	while moved:
+		moved = move(0, 1)
+		if moved:
+			drop_count += 1
+	
+	print("硬降了 %d 格" % drop_count)
+
+# 输入监听
+func _input(event: InputEvent) -> void:
+	if current_type == "" or current_shape.size() == 0:
+		return
+	
+	# 左移
+	if event.is_action_pressed("ui_left"):
+		move(-1, 0)
+	
+	# 右移
+	elif event.is_action_pressed("ui_right"):
+		move(1, 0)
+	
+	# 加速下落
+	elif event.is_action_pressed("ui_down"):
+		tick_down()
+	
+	# 旋转
+	elif event.is_action_pressed("ui_up"):
+		rotate_piece()
+	
+	# 空格键：硬降
+	elif event.is_action_pressed("ui_accept"):
+		hard_drop()
+
+# ====== 游戏控制增强 ======
+
+# 暂停/继续游戏
+func toggle_pause() -> void:
+	if fall_timer:
+		if fall_timer.is_stopped():
+			fall_timer.start()
+			print("游戏继续")
+		else:
+			fall_timer.stop()
+			print("游戏暂停")
+
+# 重置游戏
+func reset_game() -> void:
+	# 停止定时器
+	if fall_timer:
+		fall_timer.stop()
+	
+	# 清空棋盘
+	clear_board()
+	
+	# 重置状态
+	current_type = ""
+	current_shape = []
+	current_pos = Vector2.ZERO
+	
+	# 生成新方块
+	spawn_tetromino()
+	
+	# 重启定时器
+	if fall_timer:
+		fall_timer.start()
+	
+	# 重绘
+	queue_redraw()
+	
+	print("游戏已重置")
