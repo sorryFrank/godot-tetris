@@ -5,6 +5,9 @@ class_name Board
 const BOARD_WIDTH := 10
 const BOARD_HEIGHT := 20
 
+# 绘制常量
+const CELL_SIZE := 30  # 每个格子的像素大小
+
 # 棋盘网格，0表示空，1表示已固定的方块
 var grid: Array[Array] = []
 
@@ -82,6 +85,9 @@ func _ready() -> void:
 	
 	# 打印初始棋盘
 	print_board()
+	
+	# 请求初始绘制
+	queue_redraw()
 
 # 初始化棋盘网格
 func initialize_grid() -> void:
@@ -104,6 +110,7 @@ func setup_timer() -> void:
 	# 设置定时器属性
 	fall_timer.wait_time = 0.5  # 0.5秒间隔
 	fall_timer.one_shot = false  # 重复执行
+	fall_timer.autostart = true  # 自动启动
 	
 	# 连接信号 (Godot 4.x 语法)
 	fall_timer.timeout.connect(Callable(self, "_on_fall_timer_timeout"))
@@ -172,6 +179,9 @@ func tick_down() -> void:
 		lock_tetromino()
 		spawn_tetromino()
 		print_board()
+	
+	# 请求重绘画面
+	queue_redraw()
 
 # 锁定当前方块到棋盘
 func lock_tetromino() -> void:
@@ -296,3 +306,86 @@ func stop_game() -> void:
 	if fall_timer:
 		fall_timer.stop()
 		print("游戏已停止")
+
+# ====== 绘制函数 ======
+
+func _draw() -> void:
+	# 绘制游戏边界框
+	draw_game_border()
+	
+	# 绘制已固定的方块
+	draw_fixed_blocks()
+	
+	# 绘制当前活动方块
+	draw_current_tetromino()
+
+# 绘制游戏边界框
+func draw_game_border() -> void:
+	var border_rect := Rect2(
+		0, 0,
+		BOARD_WIDTH * CELL_SIZE,
+		BOARD_HEIGHT * CELL_SIZE
+	)
+	# 绘制半透明边框
+	draw_rect(border_rect, Color(0.5, 0.5, 0.5, 0.3), false, 2.0)
+
+# 绘制已固定的方块
+func draw_fixed_blocks() -> void:
+	for y in range(BOARD_HEIGHT):
+		for x in range(BOARD_WIDTH):
+			if grid[y][x] == 1:  # 已固定的方块
+				var rect := Rect2(
+					x * CELL_SIZE,
+					y * CELL_SIZE,
+					CELL_SIZE,
+					CELL_SIZE
+				)
+				# 绘制灰色方块
+				draw_rect(rect, Color.DARK_GRAY)
+				# 绘制边框
+				draw_rect(rect, Color(0.2, 0.2, 0.2), false, 1.0)
+
+# 绘制当前活动方块
+func draw_current_tetromino() -> void:
+	if current_type == "" or current_shape.size() == 0:
+		return
+	
+	# 根据方块类型选择颜色
+	var block_color := get_tetromino_color(current_type)
+	
+	for block_pos in current_shape:
+		var world_x = current_pos.x + block_pos.x
+		var world_y = current_pos.y + block_pos.y
+		
+		# 只绘制在棋盘范围内的方块
+		if world_x >= 0 and world_x < BOARD_WIDTH and world_y >= 0 and world_y < BOARD_HEIGHT:
+			var rect := Rect2(
+				world_x * CELL_SIZE,
+				world_y * CELL_SIZE,
+				CELL_SIZE,
+				CELL_SIZE
+			)
+			# 绘制彩色方块
+			draw_rect(rect, block_color)
+			# 绘制边框
+			draw_rect(rect, block_color.darkened(0.3), false, 1.5)
+
+# 获取方块颜色
+func get_tetromino_color(shape_name: String) -> Color:
+	match shape_name:
+		"I":
+			return Color.CYAN
+		"J":
+			return Color.BLUE
+		"L":
+			return Color.ORANGE
+		"O":
+			return Color.YELLOW
+		"S":
+			return Color.GREEN
+		"T":
+			return Color.PURPLE
+		"Z":
+			return Color.RED
+		_:
+			return Color.WHITE
