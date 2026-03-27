@@ -200,6 +200,11 @@ func lock_tetromino() -> void:
 		# 只锁定在棋盘范围内的方块
 		if world_x >= 0 and world_x < BOARD_WIDTH and world_y >= 0 and world_y < BOARD_HEIGHT:
 			grid[world_y][world_x] = 1  # 用1表示已锁定的方块
+	
+	# 检测并消除满行
+	var lines_cleared = check_and_clear_lines()
+	if lines_cleared > 0:
+		print(">>> 消除了 %d 行！" % lines_cleared)
 
 # 可视化打印棋盘
 func print_board() -> void:
