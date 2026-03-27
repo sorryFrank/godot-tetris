@@ -63,6 +63,11 @@ var current_type: String = ""          # 当前方块名称
 var current_shape: Array[Vector2] = [] # 当前方块的坐标数组
 var current_pos: Vector2 = Vector2.ZERO # 当前方块在网格的坐标
 
+# ====== 计分变量 ======
+var score: int = 0    # 总分
+var level: int = 1    # 等级
+var combo: int = 0    # 连击次数
+
 # 随机数生成器
 var rng := RandomNumberGenerator.new()
 
@@ -620,6 +625,41 @@ func reset_game() -> void:
 	
 	print("游戏已重置")
 
+# ====== 计分逻辑 ======
+
+# 计算消除行数的得分
+# 返回本次获得的分数
+func calculate_score(lines_cleared: int) -> int:
+	if lines_cleared <= 0:
+		return 0
+	
+	# 基础计分
+	var base_score: int = 0
+	match lines_cleared:
+		1:
+			base_score = 100
+		2:
+			base_score = 300
+		3:
+			base_score = 500
+		_:
+			base_score = 800  # 4行及以上（Tetris）
+	
+	# 连击奖励
+	var combo_bonus: int = combo * 50
+	
+	# 等级加成：等级1无加成，等级2加成1.1x，等级3加成1.2x...
+	var level_multiplier: float = 1.0 + (level - 1) * 0.1
+	
+	# 最终得分
+	var final_score: int = int((base_score + combo_bonus) * level_multiplier)
+	
+	return final_score
+
+# 重置连击
+func reset_combo() -> void:
+	combo = 0
+
 # ====== 消行逻辑 ======
 
 # 检测并清除满行
@@ -641,9 +681,18 @@ func check_and_clear_lines() -> int:
 	var lines_cleared := full_rows.size()
 	
 	if lines_cleared == 0:
+		# 没有消除行，重置连击
+		reset_combo()
 		return 0
 	
-	# 2. 一次性重建棋盘，跳过所有满行
+	# 2. 计算并增加得分
+	var points := calculate_score(lines_cleared)
+	score += points
+	
+	# 3. 增加连击
+	combo += 1
+	
+	# 4. 一次性重建棋盘，跳过所有满行
 	# 从底部往上构建新棋盘
 	var new_grid: Array[Array] = []
 	
@@ -656,22 +705,23 @@ func check_and_clear_lines() -> int:
 				row.append(grid[y][x])
 			new_grid.append(row)
 	
-	# 3. 在顶部添加空行填补消除的行数
+	# 5. 在顶部添加空行填补消除的行数
 	for i in range(lines_cleared):
 		var empty_row := []
 		for x in range(BOARD_WIDTH):
 			empty_row.append(0)
 		new_grid.append(empty_row)
 	
-	# 4. 将新棋盘反转回正确顺序（从上到下）
+	# 6. 将新棋盘反转回正确顺序（从上到下）
 	new_grid.reverse()
 	
-	# 5. 更新棋盘
+	# 7. 更新棋盘
 	for y in range(BOARD_HEIGHT):
 		for x in range(BOARD_WIDTH):
 			grid[y][x] = new_grid[y][x]
 	
+	# 8. 打印得分信息
 	if lines_cleared > 0:
-		print("消除了 %d 行" % lines_cleared)
+		print("消除了 %d 行，获得 %d 分，连击 %d 次，总分 %d" % [lines_cleared, points, combo, score])
 	
 	return lines_cleared
