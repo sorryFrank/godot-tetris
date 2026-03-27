@@ -359,6 +359,9 @@ func _draw() -> void:
 	
 	# 绘制当前活动方块
 	draw_current_tetromino()
+	
+	# 绘制 UI：分数/等级/连击
+	draw_score_ui()
 
 # 绘制游戏边界框
 func draw_game_border() -> void:
@@ -430,6 +433,23 @@ func get_tetromino_color(shape_name: String) -> Color:
 			return Color.RED
 		_:
 			return Color.WHITE
+
+# 绘制分数/等级/连击 UI
+func draw_score_ui() -> void:
+	var font = ThemeDB.fallback_font()
+	var font_size := 18
+	var ui_x := 320.0  # 棋盘宽度 300 + 间距 20
+	var line_height := 25.0
+	
+	# 绘制分数
+	draw_string(font, Vector2(ui_x, 30), "Score: %d" % score, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)
+	
+	# 绘制等级
+	draw_string(font, Vector2(ui_x, 30 + line_height), "Level: %d" % level, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)
+	
+	# 绘制连击（仅当连击 > 0 时显示）
+	if combo > 0:
+		draw_string(font, Vector2(ui_x, 30 + line_height * 2), "Combo: %d" % combo, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.YELLOW)
 
 # ====== 玩家输入控制 ======
 
