@@ -514,3 +514,59 @@ func reset_game() -> void:
 	queue_redraw()
 	
 	print("游戏已重置")
+
+# ====== 消行逻辑 ======
+
+# 检测并清除满行
+# 返回消除的行数
+func check_and_clear_lines() -> int:
+	# 1. 找出所有满行
+	var full_rows: Array[int] = []
+	
+	for y in range(BOARD_HEIGHT):
+		var is_full := true
+		for x in range(BOARD_WIDTH):
+			if grid[y][x] == 0:
+				is_full = false
+				break
+		
+		if is_full:
+			full_rows.append(y)
+	
+	var lines_cleared := full_rows.size()
+	
+	if lines_cleared == 0:
+		return 0
+	
+	# 2. 一次性重建棋盘，跳过所有满行
+	# 从底部往上构建新棋盘
+	var new_grid: Array[Array] = []
+	
+	# 从底部往上遍历，保留非满行
+	for y in range(BOARD_HEIGHT - 1, -1, -1):
+		if y not in full_rows:
+			# 这行不是满行，保留它
+			var row := []
+			for x in range(BOARD_WIDTH):
+				row.append(grid[y][x])
+			new_grid.append(row)
+	
+	# 3. 在顶部添加空行填补消除的行数
+	for i in range(lines_cleared):
+		var empty_row := []
+		for x in range(BOARD_WIDTH):
+			empty_row.append(0)
+		new_grid.append(empty_row)
+	
+	# 4. 将新棋盘反转回正确顺序（从上到下）
+	new_grid.reverse()
+	
+	# 5. 更新棋盘
+	for y in range(BOARD_HEIGHT):
+		for x in range(BOARD_WIDTH):
+			grid[y][x] = new_grid[y][x]
+	
+	if lines_cleared > 0:
+		print("消除了 %d 行" % lines_cleared)
+	
+	return lines_cleared
