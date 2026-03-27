@@ -75,7 +75,14 @@ var hold_timer_left: float = 0.0    # 左键长按计时器
 var hold_timer_right: float = 0.0   # 右键长按计时器
 var hold_timer_up: float = 0.0      # 上键长按计时器（旋转）
 
+# DAS 状态：0=首次按下, 1=等待初始延迟, 2=连续触发中
+var hold_state_down: int = 0
+var hold_state_left: int = 0
+var hold_state_right: int = 0
+var hold_state_up: int = 0
+
 # 长按移动间隔（秒）
+const HOLD_INITIAL_DELAY: float = 0.25   # 初始延迟 250ms (DAS)
 const HOLD_INTERVAL_DOWN: float = 0.08   # 80ms - 快速下移
 const HOLD_INTERVAL_LEFT_RIGHT: float = 0.12  # 120ms - 横向移动
 const HOLD_INTERVAL_UP: float = 0.18     # 180ms - 旋转
@@ -140,6 +147,16 @@ func _on_fall_timer_timeout() -> void:
 
 # 生成新方块
 func spawn_tetromino() -> void:
+	# 重置所有按键状态（解决按键状态残留问题）
+	hold_state_down = 0
+	hold_state_left = 0
+	hold_state_right = 0
+	hold_state_up = 0
+	hold_timer_down = 0.0
+	hold_timer_left = 0.0
+	hold_timer_right = 0.0
+	hold_timer_up = 0.0
+	
 	# 从7种方块中随机选择一种
 	var shape_names = get_all_shape_names()
 	var random_index = rng.randi_range(0, shape_names.size() - 1)
@@ -477,64 +494,92 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_accept"):
 		hard_drop()
 
-# 每帧处理长按移动
+# 每帧处理长按移动（DAS 机制）
 func _process(delta: float) -> void:
 	if current_type == "" or current_shape.size() == 0:
 		return
 	
 	# 处理下键长按 - 连续快速下移
 	if Input.is_action_pressed("ui_down"):
-		# 首次按下（计时器为0）立即触发一次
-		if hold_timer_down == 0.0:
+		if hold_state_down == 0:
+			# 首次按下：立即触发一次
 			tick_down()
-		hold_timer_down += delta
-		if hold_timer_down >= HOLD_INTERVAL_DOWN:
-			tick_down()
+			hold_state_down = 1
 			hold_timer_down = 0.0
+		elif hold_state_down == 1:
+			# 等待初始延迟
+			hold_timer_down += delta
+			if hold_timer_down >= HOLD_INITIAL_DELAY:
+				hold_state_down = 2
+				hold_timer_down = 0.0
+		else:
+			# 连续触发阶段
+			hold_timer_down += delta
+			if hold_timer_down >= HOLD_INTERVAL_DOWN:
+				tick_down()
+				hold_timer_down = 0.0
 	else:
-		# 按键释放时重置计时器
+		hold_state_down = 0
 		hold_timer_down = 0.0
 	
 	# 处理左键长按 - 连续左移
 	if Input.is_action_pressed("ui_left"):
-		# 首次按下立即触发
-		if hold_timer_left == 0.0:
+		if hold_state_left == 0:
 			move(-1, 0)
-		hold_timer_left += delta
-		if hold_timer_left >= HOLD_INTERVAL_LEFT_RIGHT:
-			if move(-1, 0):
+			hold_state_left = 1
+			hold_timer_left = 0.0
+		elif hold_state_left == 1:
+			hold_timer_left += delta
+			if hold_timer_left >= HOLD_INITIAL_DELAY:
+				hold_state_left = 2
 				hold_timer_left = 0.0
-			else:
+		else:
+			hold_timer_left += delta
+			if hold_timer_left >= HOLD_INTERVAL_LEFT_RIGHT:
+				move(-1, 0)
 				hold_timer_left = 0.0
 	else:
+		hold_state_left = 0
 		hold_timer_left = 0.0
 	
 	# 处理右键长按 - 连续右移
 	if Input.is_action_pressed("ui_right"):
-		# 首次按下立即触发
-		if hold_timer_right == 0.0:
+		if hold_state_right == 0:
 			move(1, 0)
-		hold_timer_right += delta
-		if hold_timer_right >= HOLD_INTERVAL_LEFT_RIGHT:
-			if move(1, 0):
+			hold_state_right = 1
+			hold_timer_right = 0.0
+		elif hold_state_right == 1:
+			hold_timer_right += delta
+			if hold_timer_right >= HOLD_INITIAL_DELAY:
+				hold_state_right = 2
 				hold_timer_right = 0.0
-			else:
+		else:
+			hold_timer_right += delta
+			if hold_timer_right >= HOLD_INTERVAL_LEFT_RIGHT:
+				move(1, 0)
 				hold_timer_right = 0.0
 	else:
+		hold_state_right = 0
 		hold_timer_right = 0.0
 	
 	# 处理上键长按 - 连续旋转
 	if Input.is_action_pressed("ui_up"):
-		# 首次按下立即触发
-		if hold_timer_up == 0.0:
+		if hold_state_up == 0:
 			rotate_piece()
-		hold_timer_up += delta
-		if hold_timer_up >= HOLD_INTERVAL_UP:
-			if rotate_piece():
+			hold_state_up = 1
+			hold_timer_up = 0.0
+		elif hold_state_up == 1:
+			hold_timer_up += delta
+			if hold_timer_up >= HOLD_INITIAL_DELAY:
+				hold_state_up = 2
 				hold_timer_up = 0.0
-			else:
+		else:
+			hold_timer_up += delta
+			if hold_timer_up >= HOLD_INTERVAL_UP:
+				rotate_piece()
 				hold_timer_up = 0.0
 	else:
+		hold_state_up = 0
 		hold_timer_up = 0.0
 
 # ====== 游戏控制增强 ======
