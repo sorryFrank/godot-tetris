@@ -69,6 +69,17 @@ var rng := RandomNumberGenerator.new()
 # 定时器
 var fall_timer: Timer = null
 
+# ====== 长按连续移动变量 ======
+var hold_timer_down: float = 0.0    # 下键长按计时器
+var hold_timer_left: float = 0.0    # 左键长按计时器
+var hold_timer_right: float = 0.0   # 右键长按计时器
+var hold_timer_up: float = 0.0      # 上键长按计时器（旋转）
+
+# 长按移动间隔（秒）
+const HOLD_INTERVAL_DOWN: float = 0.08   # 80ms - 快速下移
+const HOLD_INTERVAL_LEFT_RIGHT: float = 0.12  # 120ms - 横向移动
+const HOLD_INTERVAL_UP: float = 0.18     # 180ms - 旋转
+
 # 初始化函数
 func _ready() -> void:
 	# 初始化随机数生成器
@@ -457,30 +468,74 @@ func hard_drop() -> void:
 	
 	print("硬降了 %d 格" % drop_count)
 
-# 输入监听
+# 输入监听 - 处理特殊按键
 func _input(event: InputEvent) -> void:
 	if current_type == "" or current_shape.size() == 0:
 		return
 	
-	# 左移
-	if event.is_action_pressed("ui_left"):
-		move(-1, 0)
-	
-	# 右移
-	elif event.is_action_pressed("ui_right"):
-		move(1, 0)
-	
-	# 加速下落
-	elif event.is_action_pressed("ui_down"):
-		tick_down()
-	
-	# 旋转
-	elif event.is_action_pressed("ui_up"):
-		rotate_piece()
-	
-	# 空格键：硬降
-	elif event.is_action_pressed("ui_accept"):
+	# 空格键：硬降（单次触发，不参与长按）
+	if event.is_action_pressed("ui_accept"):
 		hard_drop()
+
+# 每帧处理长按移动
+func _process(delta: float) -> void:
+	if current_type == "" or current_shape.size() == 0:
+		return
+	
+	# 处理下键长按 - 连续快速下移
+	if Input.is_action_pressed("ui_down"):
+		# 首次按下（计时器为0）立即触发一次
+		if hold_timer_down == 0.0:
+			tick_down()
+		hold_timer_down += delta
+		if hold_timer_down >= HOLD_INTERVAL_DOWN:
+			tick_down()
+			hold_timer_down = 0.0
+	else:
+		# 按键释放时重置计时器
+		hold_timer_down = 0.0
+	
+	# 处理左键长按 - 连续左移
+	if Input.is_action_pressed("ui_left"):
+		# 首次按下立即触发
+		if hold_timer_left == 0.0:
+			move(-1, 0)
+		hold_timer_left += delta
+		if hold_timer_left >= HOLD_INTERVAL_LEFT_RIGHT:
+			if move(-1, 0):
+				hold_timer_left = 0.0
+			else:
+				hold_timer_left = 0.0
+	else:
+		hold_timer_left = 0.0
+	
+	# 处理右键长按 - 连续右移
+	if Input.is_action_pressed("ui_right"):
+		# 首次按下立即触发
+		if hold_timer_right == 0.0:
+			move(1, 0)
+		hold_timer_right += delta
+		if hold_timer_right >= HOLD_INTERVAL_LEFT_RIGHT:
+			if move(1, 0):
+				hold_timer_right = 0.0
+			else:
+				hold_timer_right = 0.0
+	else:
+		hold_timer_right = 0.0
+	
+	# 处理上键长按 - 连续旋转
+	if Input.is_action_pressed("ui_up"):
+		# 首次按下立即触发
+		if hold_timer_up == 0.0:
+			rotate_piece()
+		hold_timer_up += delta
+		if hold_timer_up >= HOLD_INTERVAL_UP:
+			if rotate_piece():
+				hold_timer_up = 0.0
+			else:
+				hold_timer_up = 0.0
+	else:
+		hold_timer_up = 0.0
 
 # ====== 游戏控制增强 ======
 
