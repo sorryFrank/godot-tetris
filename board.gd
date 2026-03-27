@@ -436,7 +436,7 @@ func get_tetromino_color(shape_name: String) -> Color:
 
 # 绘制分数/等级/连击 UI
 func draw_score_ui() -> void:
-	var font = ThemeDB.fallback_font()
+	var font = ThemeDB.fallback_font
 	var font_size := 18
 	var ui_x := 320.0  # 棋盘宽度 300 + 间距 20
 	var line_height := 25.0
