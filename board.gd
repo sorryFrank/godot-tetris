@@ -68,6 +68,9 @@ var score: int = 0    # 总分
 var level: int = 1    # 等级
 var combo: int = 0    # 连击次数
 
+# ====== 游戏状态 ======
+var game_over: bool = false  # 游戏是否结束
+
 # 随机数生成器
 var rng := RandomNumberGenerator.new()
 
@@ -176,9 +179,11 @@ func spawn_tetromino() -> void:
 	# 检查生成位置是否有效
 	if not is_valid_position(current_pos, current_shape):
 		print("游戏结束：无法生成新方块")
+		game_over = true
 		# 停止定时器
 		if fall_timer:
 			fall_timer.stop()
+		queue_redraw()  # 触发重绘显示游戏结束 UI
 		return
 
 # 碰撞检测
@@ -353,15 +358,19 @@ func stop_game() -> void:
 func _draw() -> void:
 	# 绘制游戏边界框
 	draw_game_border()
-	
+
 	# 绘制已固定的方块
 	draw_fixed_blocks()
-	
+
 	# 绘制当前活动方块
 	draw_current_tetromino()
-	
+
 	# 绘制 UI：分数/等级/连击
 	draw_score_ui()
+
+	# 绘制游戏结束 UI
+	if game_over:
+		draw_game_over_ui()
 
 # 绘制游戏边界框
 func draw_game_border() -> void:
@@ -440,16 +449,39 @@ func draw_score_ui() -> void:
 	var font_size := 18
 	var ui_x := 320.0  # 棋盘宽度 300 + 间距 20
 	var line_height := 25.0
-	
+
 	# 绘制分数
 	draw_string(font, Vector2(ui_x, 30), "Score: %d" % score, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)
-	
+
 	# 绘制等级
 	draw_string(font, Vector2(ui_x, 30 + line_height), "Level: %d" % level, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)
-	
+
 	# 绘制连击（仅当连击 > 0 时显示）
 	if combo > 0:
 		draw_string(font, Vector2(ui_x, 30 + line_height * 2), "Combo: %d" % combo, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.YELLOW)
+
+# 绘制游戏结束 UI
+func draw_game_over_ui() -> void:
+	var font = ThemeDB.fallback_font
+	var board_center_x := BOARD_WIDTH * CELL_SIZE / 2.0
+	var board_center_y := BOARD_HEIGHT * CELL_SIZE / 2.0
+
+	# 绘制半透明遮罩
+	var overlay := Rect2(0, 0, BOARD_WIDTH * CELL_SIZE, BOARD_HEIGHT * CELL_SIZE)
+	draw_rect(overlay, Color(0, 0, 0, 0.7))
+
+	# 绘制 "GAME OVER" 文字（红色大字）
+	var title_font_size := 28
+	var title_text := "GAME OVER"
+	draw_string(font, Vector2(board_center_x - 80, board_center_y - 40), title_text, HORIZONTAL_ALIGNMENT_LEFT, -1, title_font_size, Color.RED)
+
+	# 绘制最终分数
+	var score_font_size := 20
+	draw_string(font, Vector2(board_center_x - 60, board_center_y), "Score: %d" % score, HORIZONTAL_ALIGNMENT_LEFT, -1, score_font_size, Color.WHITE)
+
+	# 绘制提示文字
+	var hint_font_size := 16
+	draw_string(font, Vector2(board_center_x - 70, board_center_y + 35), "Press R to Restart", HORIZONTAL_ALIGNMENT_LEFT, -1, hint_font_size, Color.YELLOW)
 
 # ====== 玩家输入控制 ======
 
@@ -512,15 +544,29 @@ func hard_drop() -> void:
 
 # 输入监听 - 处理特殊按键
 func _input(event: InputEvent) -> void:
+	# R 键：重新开始（游戏结束时有效）
+	if event is InputEventKey and event.pressed and event.keycode == KEY_R:
+		if game_over:
+			restart_game()
+		return
+
+	# 游戏结束时跳过其他输入
+	if game_over:
+		return
+
 	if current_type == "" or current_shape.size() == 0:
 		return
-	
+
 	# 空格键：硬降（单次触发，不参与长按）
 	if event.is_action_pressed("ui_accept"):
 		hard_drop()
 
 # 每帧处理长按移动（DAS 机制）
 func _process(delta: float) -> void:
+	# 游戏结束时跳过输入处理
+	if game_over:
+		return
+
 	if current_type == "" or current_shape.size() == 0:
 		return
 	
@@ -743,5 +789,48 @@ func check_and_clear_lines() -> int:
 	# 8. 打印得分信息
 	if lines_cleared > 0:
 		print("消除了 %d 行，获得 %d 分，连击 %d 次，总分 %d" % [lines_cleared, points, combo, score])
-	
+
 	return lines_cleared
+
+# ====== 游戏重启 ======
+
+# 重新开始游戏
+func restart_game() -> void:
+	print("=== 重新开始游戏 ===")
+
+	# 重置游戏状态
+	game_over = false
+	score = 0
+	level = 1
+	combo = 0
+
+	# 重置当前方块
+	current_type = ""
+	current_shape = []
+	current_pos = Vector2.ZERO
+
+	# 重置按键状态
+	hold_state_down = 0
+	hold_state_left = 0
+	hold_state_right = 0
+	hold_state_up = 0
+	hold_timer_down = 0.0
+	hold_timer_left = 0.0
+	hold_timer_right = 0.0
+	hold_timer_up = 0.0
+
+	# 重新初始化棋盘
+	initialize_grid()
+
+	# 生成新方块
+	spawn_tetromino()
+
+	# 重新启动定时器
+	if fall_timer:
+		fall_timer.start()
+
+	# 打印棋盘
+	print_board()
+
+	# 请求重绘
+	queue_redraw()
