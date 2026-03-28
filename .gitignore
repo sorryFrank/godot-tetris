@@ -66,3 +66,6 @@ yarn-error.log*
 # Local configuration
 local_settings.cfg
 *.local
+
+# Local development notes (not for GitHub)
+DEVELOPMENT.md
